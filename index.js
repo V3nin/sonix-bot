@@ -1,7 +1,7 @@
-require("dotenv").config();
-
 const fs = require("fs");
 const { Client, GatewayIntentBits, Collection } = require("discord.js");
+
+/* CLIENT */
 
 const client = new Client({
   intents: [
@@ -32,7 +32,7 @@ for (const file of eventFiles) {
   event(client);
 }
 
-/* BOT READY */
+/* READY */
 
 client.once("ready", () => {
   console.log(`⚡ SoniX Online : ${client.user.tag}`);
@@ -42,6 +42,9 @@ client.once("ready", () => {
 
 client.on("error", console.error);
 client.on("warn", console.warn);
+
+process.on("unhandledRejection", console.error);
+process.on("uncaughtException", console.error);
 
 /* LOGIN */
 
