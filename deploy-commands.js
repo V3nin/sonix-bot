@@ -23,7 +23,9 @@ new SlashCommandBuilder()
 option.setName("user")
 .setDescription("User to scan")
 .setRequired(true)
-)
+),
+
+require("./commands/mod").data
 
 ].map(command => command.toJSON());
 
