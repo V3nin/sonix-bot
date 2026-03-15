@@ -1,15 +1,16 @@
 const antispam = require("../systems/antispam");
 const scamdetect = require("../systems/scamdetect");
+const prefixModeration = require("../systems/prefixModeration");
 
-module.exports = (client)=>{
+module.exports = (client) => {
+  client.on("messageCreate", async (message) => {
+    if (message.author.bot) return;
 
-client.on("messageCreate",async message=>{
+    // Prefix moderation system
+    await prefixModeration(message);
 
-if(message.author.bot) return;
-
-antispam(message);
-scamdetect(message);
-
-});
-
+    // Security systems
+    antispam(message);
+    scamdetect(message);
+  });
 };
