@@ -4,6 +4,7 @@ const {
 } = require("discord.js");
 
 const {
+  tokenize,
   parseUsers,
   parseReason,
   requirePerms,
@@ -13,8 +14,189 @@ const {
 
 const sanctions = require("../utils/sanctions");
 const logManager = require("../utils/logManager");
+const manageUtils = require("../utils/manageUtils");
 
 const PREFIX = "=";
+
+async function handleLock(message, all = false) {
+  if (!manageUtils.canManageChannels(message.member)) {
+    return manageUtils.reply(message, "❌ You need Manage Channels permission.");
+  }
+
+  const reason = message.content.split(/\s+/).slice(all ? 2 : 1).join(" ").trim() || "No reason provided";
+
+  if (all) {
+    const chans = message.guild.channels.cache.filter(c => [0, 5].includes(c.type));
+    let ok = 0;
+    for (const [, ch] of chans) {
+      const did = await manageUtils.setChannelLocked(ch, true, reason);
+      if (did) ok++;
+    }
+
+    const embed = logManager.makeModEmbed("Lock All", [
+      { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
+      { name: "Channels", value: String(ok), inline: true },
+      { name: "Reason", value: reason }
+    ], 0xed4245);
+    await logManager.log(message.guild, "modlog", embed);
+
+    return manageUtils.reply(message, `🔒 Locked ${ok} channels.`);
+  }
+
+  await manageUtils.setChannelLocked(message.channel, true, reason);
+
+  const embed = logManager.makeModEmbed("Lock", [
+    { name: "Channel", value: `${message.channel}` },
+    { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
+    { name: "Reason", value: reason }
+  ], 0xed4245);
+  await logManager.log(message.guild, "modlog", embed);
+
+  return manageUtils.reply(message, `🔒 Locked ${message.channel}.`);
+}
+
+async function handleUnlock(message, all = false) {
+  if (!manageUtils.canManageChannels(message.member)) {
+    return manageUtils.reply(message, "❌ You need Manage Channels permission.");
+  }
+
+  const reason = message.content.split(/\s+/).slice(all ? 2 : 1).join(" ").trim() || "No reason provided";
+
+  if (all) {
+    const chans = message.guild.channels.cache.filter(c => [0, 5].includes(c.type));
+    let ok = 0;
+    for (const [, ch] of chans) {
+      const did = await manageUtils.setChannelLocked(ch, false, reason);
+      if (did) ok++;
+    }
+
+    const embed = logManager.makeModEmbed("Unlock All", [
+      { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
+      { name: "Channels", value: String(ok), inline: true },
+      { name: "Reason", value: reason }
+    ], 0x57f287);
+    await logManager.log(message.guild, "modlog", embed);
+
+    return manageUtils.reply(message, `🔓 Unlocked ${ok} channels.`);
+  }
+
+  await manageUtils.setChannelLocked(message.channel, false, reason);
+
+  const embed = logManager.makeModEmbed("Unlock", [
+    { name: "Channel", value: `${message.channel}` },
+    { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
+    { name: "Reason", value: reason }
+  ], 0x57f287);
+  await logManager.log(message.guild, "modlog", embed);
+
+  return manageUtils.reply(message, `🔓 Unlocked ${message.channel}.`);
+}
+
+async function handleHide(message, all = false) {
+  if (!manageUtils.canManageChannels(message.member)) {
+    return manageUtils.reply(message, "❌ You need Manage Channels permission.");
+  }
+
+  const reason = message.content.split(/\s+/).slice(all ? 2 : 1).join(" ").trim() || "No reason provided";
+
+  if (all) {
+    const chans = message.guild.channels.cache;
+    let ok = 0;
+    for (const [, ch] of chans) {
+      const did = await manageUtils.setChannelHidden(ch, true, reason);
+      if (did) ok++;
+    }
+
+    const embed = logManager.makeModEmbed("Hide All", [
+      { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
+      { name: "Channels", value: String(ok), inline: true },
+      { name: "Reason", value: reason }
+    ], 0xed4245);
+    await logManager.log(message.guild, "modlog", embed);
+
+    return manageUtils.reply(message, `🙈 Hid ${ok} channels.`);
+  }
+
+  await manageUtils.setChannelHidden(message.channel, true, reason);
+
+  const embed = logManager.makeModEmbed("Hide", [
+    { name: "Channel", value: `${message.channel}` },
+    { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
+    { name: "Reason", value: reason }
+  ], 0xed4245);
+  await logManager.log(message.guild, "modlog", embed);
+
+  return manageUtils.reply(message, `🙈 Hid ${message.channel}.`);
+}
+
+async function handleUnhide(message, all = false) {
+  if (!manageUtils.canManageChannels(message.member)) {
+    return manageUtils.reply(message, "❌ You need Manage Channels permission.");
+  }
+
+  const reason = message.content.split(/\s+/).slice(all ? 2 : 1).join(" ").trim() || "No reason provided";
+
+  if (all) {
+    const chans = message.guild.channels.cache;
+    let ok = 0;
+    for (const [, ch] of chans) {
+      const did = await manageUtils.setChannelHidden(ch, false, reason);
+      if (did) ok++;
+    }
+
+    const embed = logManager.makeModEmbed("Unhide All", [
+      { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
+      { name: "Channels", value: String(ok), inline: true },
+      { name: "Reason", value: reason }
+    ], 0x57f287);
+    await logManager.log(message.guild, "modlog", embed);
+
+    return manageUtils.reply(message, `👁️ Unhid ${ok} channels.`);
+  }
+
+  await manageUtils.setChannelHidden(message.channel, false, reason);
+
+  const embed = logManager.makeModEmbed("Unhide", [
+    { name: "Channel", value: `${message.channel}` },
+    { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
+    { name: "Reason", value: reason }
+  ], 0x57f287);
+  await logManager.log(message.guild, "modlog", embed);
+
+  return manageUtils.reply(message, `👁️ Unhid ${message.channel}.`);
+}
+
+async function handleNick(message) {
+  if (!manageUtils.canManageNick(message.member)) {
+    return manageUtils.reply(message, "❌ You need Manage Nicknames permission.");
+  }
+
+  const users = parseUsers(message);
+  if (!users.length) return manageUtils.reply(message, "Usage: =nick @user <new nickname>");
+
+  const target = users[0];
+  const member = await message.guild.members.fetch(target.id).catch(() => null);
+  if (!member) return manageUtils.reply(message, "❌ Member not found.");
+
+  const me = message.guild.members.me;
+  if (!canModerate(me, member)) return manageUtils.reply(message, "❌ I can't change this member's nickname (role hierarchy).");
+
+  const tokens = tokenize(message);
+  // tokens: ['=nick', '@user', ...nick]
+  const newNick = tokens.slice(2).join(" ").trim();
+  if (!newNick) return manageUtils.reply(message, "Usage: =nick @user <new nickname>");
+
+  await member.setNickname(newNick, `Nick change by ${message.author.tag}`).catch(() => {});
+
+  const embed = logManager.makeModEmbed("Nick", [
+    { name: "User", value: `${target.tag} (${target.id})` },
+    { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
+    { name: "New Nick", value: newNick }
+  ], 0x5865f2);
+  await logManager.log(message.guild, "modlog", embed);
+
+  return manageUtils.reply(message, `✅ Nick changed for ${target.tag}.`);
+}
 
 function reply(message, content) {
   return message.reply({ content }).catch(() => {});
@@ -91,10 +273,10 @@ async function handleMute(message, durationMs = null) {
 
   const users = parseUsers(message);
   if (!users.length) {
-    return reply(message, durationMs ? "Usage: =tempmute @user 10m [reason]" : "Usage: =mute @user [reason]");
+    return reply(message, durationMs ? "Usage: =tempmute <duration> @user [@user2 ...] [reason]" : "Usage: =mute @user [@user2 ...] [reason]");
   }
 
-  const reason = parseReason(message, users.length);
+  const reason = parseReason(message, users.length, durationMs ? 1 : 0);
 
   const me = message.guild.members.me;
   const out = [];
@@ -118,7 +300,7 @@ async function handleMute(message, durationMs = null) {
     const embed = logManager.makeModEmbed(durationMs ? "Temp Mute" : "Mute", [
       { name: "User", value: `${user.tag} (${user.id})` },
       { name: "Moderator", value: `${message.author.tag} (${message.author.id})` },
-      { name: "Duration", value: durationMs ? `${Math.round(durationMs / 1000)}s` : "Until unmuted (timeout)", inline: false },
+      { name: "Duration", value: durationMs ? `<t:${Math.floor((Date.now() + durationMs) / 1000)}:R>` : "Until unmuted (timeout)", inline: false },
       { name: "Reason", value: reason }
     ], 0xed4245);
 
@@ -208,10 +390,10 @@ async function handleBan(message, durationMs = null) {
 
   const users = parseUsers(message);
   if (!users.length) {
-    return reply(message, durationMs ? "Usage: =tempban @user 7d [reason]" : "Usage: =ban @user [@user2 ...] [reason]");
+    return reply(message, durationMs ? "Usage: =tempban <duration> @user [@user2 ...] [reason]" : "Usage: =ban @user [@user2 ...] [reason]");
   }
 
-  const reason = parseReason(message, users.length);
+  const reason = parseReason(message, users.length, durationMs ? 1 : 0);
 
   const out = [];
   for (const user of users) {
@@ -401,9 +583,7 @@ module.exports = async (message) => {
     if (command === "mute") return handleMute(message, null);
     if (command === "tempmute") {
       const duration = msFromHuman(sub1);
-      if (!duration) return reply(message, "Usage: =tempmute @user 10m [reason]");
-      // For tempmute, user list is after duration token; simplest approach: require mention first:
-      // But we already parse users from message, so just use duration from 2nd token.
+      if (!duration) return reply(message, "Usage: =tempmute <duration> @user [@user2 ...] [reason]");
       return handleMute(message, duration);
     }
     if (command === "unmute") return handleUnmute(message);
@@ -412,7 +592,7 @@ module.exports = async (message) => {
     if (command === "ban") return handleBan(message, null);
     if (command === "tempban") {
       const duration = msFromHuman(sub1);
-      if (!duration) return reply(message, "Usage: =tempban @user 7d [reason]");
+      if (!duration) return reply(message, "Usage: =tempban <duration> @user [@user2 ...] [reason]");
       return handleBan(message, duration);
     }
     if (command === "unban") return handleUnban(message);
@@ -427,6 +607,17 @@ module.exports = async (message) => {
     }
 
     if (command === "sanctions") return handleSanctions(message);
+
+    // server management
+    if (command === "lock") return handleLock(message, false);
+    if (command === "unlock") return handleUnlock(message, false);
+    if (command === "lockall") return handleLock(message, true);
+    if (command === "unlockall") return handleUnlock(message, true);
+    if (command === "hide") return handleHide(message, false);
+    if (command === "unhide") return handleUnhide(message, false);
+    if (command === "hideall") return handleHide(message, true);
+    if (command === "unhideall") return handleUnhide(message, true);
+    if (command === "nick") return handleNick(message);
 
     // logging toggles
     if (command === "modlog") return handleModlogToggle(message, "modlog", String(sub1).toLowerCase() === "on");

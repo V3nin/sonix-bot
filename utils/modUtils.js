@@ -1,5 +1,9 @@
 const { PermissionsBitField } = require("discord.js");
 
+function tokenize(message) {
+  return message.content.trim().split(/\s+/);
+}
+
 function parseUsers(message) {
   const users = [];
 
@@ -7,7 +11,7 @@ function parseUsers(message) {
   for (const [, user] of message.mentions.users) users.push(user);
 
   // ids in args
-  const parts = message.content.trim().split(/\s+/).slice(1);
+  const parts = tokenize(message).slice(1);
   for (const token of parts) {
     const id = token.replace(/[<@!>]/g, "");
     if (/^\d{16,20}$/.test(id)) {
@@ -19,10 +23,14 @@ function parseUsers(message) {
   return users;
 }
 
-function parseReason(message, userCount = 1) {
-  const tokens = message.content.trim().split(/\s+/);
+function parseReason(message, userCount = 1, skipTokens = 0) {
+  const tokens = tokenize(message);
+
   // remove command
   tokens.shift();
+
+  // remove extra tokens after command (e.g. duration)
+  for (let i = 0; i < skipTokens; i++) tokens.shift();
 
   // remove user tokens (mentions or ids)
   let removed = 0;
@@ -65,6 +73,7 @@ function msFromHuman(input) {
 }
 
 module.exports = {
+  tokenize,
   parseUsers,
   parseReason,
   requirePerms,
